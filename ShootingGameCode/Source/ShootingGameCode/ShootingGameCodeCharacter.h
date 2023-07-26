@@ -49,6 +49,10 @@ class AShootingGameCodeCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* PressFAction;
 
+	/** Drop Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		class UInputAction* DropAction;
+
 public:
 	AShootingGameCodeCharacter();
 	
@@ -64,11 +68,14 @@ protected:
 	/** Called for looking input */
 	void Shoot(const FInputActionValue& Value);
 
-	/** Called for looking input */
+	/** Called for Reload input */
 	void Reload(const FInputActionValue& Value);
 
-	/** Called for looking input */
+	/** Called for PressF input */
 	void PressF(const FInputActionValue& Value);
+
+	/** Called for Drop input */
+	void Drop(const FInputActionValue& Value);
 
 protected:
 	// APawn interface
@@ -92,6 +99,18 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void ResReload();
 
+	UFUNCTION(Server, Reliable)
+	void ReqPressF();
+
+	UFUNCTION()
+	void OnRep_EquipWeapon();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ResDrop();
+
+	UFUNCTION(Server, Reliable)
+	void ReqDrop();
+
 public:
 	UFUNCTION(BlueprintCallable)
 	void EquipTestWeapon(TSubclassOf<class AWeapon> WeaponClass);
@@ -112,7 +131,10 @@ public:
 	UFUNCTION(BlueprintPure)
 	FRotator GetPlayerRotation();
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_EquipWeapon)
 	AActor* EquipWeapon;
+
+	UFUNCTION(BlueprintPure)
+	bool IsEquip();
 };
 

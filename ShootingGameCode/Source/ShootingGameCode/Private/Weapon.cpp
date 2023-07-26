@@ -15,6 +15,9 @@ AWeapon::AWeapon()
 	WeaponMesh->SetCollisionProfileName("weapon");
 	WeaponMesh->SetSimulatePhysics(true);
 
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	SetRootComponent(WeaponMesh);
 }
 
@@ -66,5 +69,14 @@ void AWeapon::EventPickUp_Implementation(ACharacter* targetChar)
 	WeaponMesh->SetSimulatePhysics(false);
 
 	AttachToComponent(targetChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon"));
+}
+
+void AWeapon::EventDrop_Implementation(ACharacter* targetChar)
+{
+	OwnChar = nullptr;
+
+	WeaponMesh->SetSimulatePhysics(true);
+
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
