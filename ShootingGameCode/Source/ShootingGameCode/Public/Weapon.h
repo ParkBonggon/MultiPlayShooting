@@ -50,6 +50,11 @@ public:
 
 	virtual void EventDrop_Implementation(ACharacter* targetChar) override;
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void IsCanPickup(bool& IsCanPickup);
+
+	virtual void IsCanPickup_Implementation(bool& IsCanPickup) override;
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UStaticMeshComponent* WeaponMesh;

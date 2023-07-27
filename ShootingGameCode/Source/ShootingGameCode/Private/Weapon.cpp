@@ -80,3 +80,13 @@ void AWeapon::EventDrop_Implementation(ACharacter* targetChar)
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
+void AWeapon::IsCanPickup_Implementation(bool& IsCanPickup)
+{
+	if (OwnChar != nullptr)
+	{
+		IsCanPickup = false; 
+		return;
+	}
+	IsCanPickup = true;
+}
+

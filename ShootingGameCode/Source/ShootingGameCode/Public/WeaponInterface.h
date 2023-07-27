@@ -34,4 +34,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EventDrop(ACharacter* targetChar);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void IsCanPickup(bool& IsCanPickup);
 };
