@@ -124,6 +124,7 @@ void AShootingGameCodeCharacter::ReqPressF_Implementation()
 		return;
 
 	EquipWeapon = nearestWeapon;
+	EquipWeapon->SetOwner(GetController());
 
 	OnRep_EquipWeapon();
 }
@@ -148,7 +149,10 @@ void AShootingGameCodeCharacter::ResDrop_Implementation()
 		return;
 
 	InterfaceObj->Execute_EventDrop(EquipWeapon, this);
+	
 	EquipWeapon = nullptr;
+
+	bUseControllerRotationYaw = IsValid(EquipWeapon);
 }
 
 void AShootingGameCodeCharacter::ReqDrop_Implementation()

@@ -56,10 +56,16 @@ public:
 	virtual void IsCanPickup_Implementation(bool& IsCanPickup) override;
 
 public:
+	UFUNCTION(Server, Reliable)
+		void ReqShoot(FVector vStart, FVector vEnd);
+
+public:
+	float GetFireStartLength();
+
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UStaticMeshComponent* WeaponMesh;
 
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UAnimMontage* ShootMontage;
 
