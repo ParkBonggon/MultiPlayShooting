@@ -36,6 +36,11 @@ public:
 	virtual void EventReload_Implementation() override;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void EventResetAmmo();
+
+	virtual void EventResetAmmo_Implementation() override;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EventShoot();
 
 	virtual void EventShoot_Implementation() override;
@@ -59,8 +64,21 @@ public:
 	UFUNCTION(Server, Reliable)
 		void ReqShoot(FVector vStart, FVector vEnd);
 
+	UFUNCTION()
+	void OnRep_Ammo();
+
+public:
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE bool IsCanShoot() const;
+
 public:
 	float GetFireStartLength();
+
+	bool UseAmmo();
+
+	void UpdateAmmoToHud(int NewAmmo);
+
+	void SetAmmo(int NewAmmos);
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -80,4 +98,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	ACharacter* OwnChar;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Ammo)
+	int Ammo;
 };

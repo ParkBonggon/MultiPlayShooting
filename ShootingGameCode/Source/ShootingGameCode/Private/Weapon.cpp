@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "ShootingHUD.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -21,6 +23,8 @@ AWeapon::AWeapon()
 	SetReplicateMovement(true);
 
 	SetRootComponent(WeaponMesh);
+
+	Ammo = 30;
 }
 
 // Called when the game starts or when spawned
@@ -28,6 +32,13 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AWeapon, Ammo);
 }
 
 // Called every frame
@@ -45,6 +56,11 @@ void AWeapon::EventTrigger_Implementation()
 	OwnChar->PlayAnimMontage(ShootMontage);
 }
 
+void AWeapon::EventResetAmmo_Implementation()
+{
+	SetAmmo(30);
+}
+
 void AWeapon::EventReload_Implementation()
 {
 	if (IsValid(ReloadMontage) == false)
@@ -55,6 +71,9 @@ void AWeapon::EventReload_Implementation()
 
 void AWeapon::EventShoot_Implementation()
 {
+	if (IsCanShoot() == false)
+		return;
+
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShootEffect,
 		WeaponMesh->GetSocketLocation("muzzle"),
 		WeaponMesh->GetSocketRotation("muzzle"), 
@@ -81,10 +100,14 @@ void AWeapon::EventPickUp_Implementation(ACharacter* targetChar)
 	WeaponMesh->SetSimulatePhysics(false);
 
 	AttachToComponent(targetChar->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon"));
+
+	UpdateAmmoToHud(Ammo);
 }
 
 void AWeapon::EventDrop_Implementation(ACharacter* targetChar)
 {
+	UpdateAmmoToHud(0);
+
 	OwnChar = nullptr;
 
 	WeaponMesh->SetSimulatePhysics(true);
@@ -104,6 +127,9 @@ void AWeapon::IsCanPickup_Implementation(bool& IsCanPickup)
 
 void AWeapon::ReqShoot_Implementation(FVector vStart, FVector vEnd)
 {
+	if (UseAmmo() == false)
+		return;
+	
 	FHitResult result;
 	FCollisionObjectQueryParams collisionObjectQuery;
 
@@ -117,8 +143,30 @@ void AWeapon::ReqShoot_Implementation(FVector vStart, FVector vEnd)
 	FCollisionQueryParams collisionQuery;
 	collisionQuery.AddIgnoredActor(OwnChar);
 
-	GetWorld()->LineTraceSingleByObjectType(result, vStart, vEnd, collisionObjectQuery, collisionQuery);
+	bool IsHit = GetWorld()->LineTraceSingleByObjectType(result, vStart, vEnd, collisionObjectQuery, collisionQuery);
 	DrawDebugLine(GetWorld(), vStart, vEnd, FColor::Green, false, 5.0f);
+
+	if (IsHit == false)
+		return;
+
+	ACharacter* HitChar = Cast<ACharacter>(result.GetActor());
+	if (HitChar == nullptr)
+		return;
+
+	UGameplayStatics::ApplyDamage(HitChar, 10, OwnChar->GetController(), this, UDamageType::StaticClass());
+}
+
+void AWeapon::OnRep_Ammo()
+{
+	UpdateAmmoToHud(Ammo);
+}
+
+bool AWeapon::IsCanShoot() const
+{
+	if(Ammo <= 0)
+	return false;
+
+	return true;
 }
 
 float AWeapon::GetFireStartLength()
@@ -131,5 +179,42 @@ float AWeapon::GetFireStartLength()
 	return 0.0f;
 
 	return Arm->TargetArmLength + 100;
+}
+
+bool AWeapon::UseAmmo()
+{
+	if (IsCanShoot() == false)
+	return false;
+
+	Ammo = Ammo - 1;
+	OnRep_Ammo();
+	return true;
+}
+
+void AWeapon::UpdateAmmoToHud(int NewAmmo)
+{
+	if (IsValid(OwnChar) == false)
+		return;
+
+	APlayerController* pPlayer0 = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+
+	AController* pOwnController = OwnChar->GetController();
+
+	if (pPlayer0 != pOwnController)
+		return;
+
+	AShootingHUD* pHud = Cast<AShootingHUD>(pPlayer0->GetHUD());
+
+	if (IsValid(pHud) == false)
+		return;
+
+	pHud->OnUpdateMyAmmo(NewAmmo);
+}
+
+void AWeapon::SetAmmo(int NewAmmo)
+{
+	Ammo = NewAmmo;
+
+	OnRep_Ammo();
 }
 
