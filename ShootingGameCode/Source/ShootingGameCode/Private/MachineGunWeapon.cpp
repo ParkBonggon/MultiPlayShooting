@@ -21,8 +21,8 @@ void AMachineGunWeapon::EventTrigger_Implementation(bool IsPress)
 
 void AMachineGunWeapon::LoopShootMontage()
 {
-	if (IsValid(ShootMontage) == false)
+	if (IsValid(weaponData->ShootMontage) == false)
 		return;
 
-	OwnChar->PlayAnimMontage(ShootMontage);
+	OwnChar->PlayAnimMontage(weaponData->ShootMontage);
 }

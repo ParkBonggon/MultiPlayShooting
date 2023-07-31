@@ -3,6 +3,7 @@
 
 #include "ActorSpawner.h"
 #include "Weapon.h"
+#include "ShootingGameInstance.h"
 
 // Sets default values
 AActorSpawner::AActorSpawner()
@@ -17,10 +18,7 @@ void AActorSpawner::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (HasAuthority())
-	{
-		GetWorld()->SpawnActor<AWeapon>(SpawnClass, GetActorTransform());
-	}
+	SpawnRandomWeapon();
 }
 
 // Called every frame
@@ -28,5 +26,21 @@ void AActorSpawner::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AActorSpawner::SpawnRandomWeapon()
+{
+	if (HasAuthority())
+	{
+		UShootingGameInstance* gameInst = Cast<UShootingGameInstance>(GetGameInstance());
+		FName rowName = gameInst->GetWeaponRandomRowName();
+		FST_Weapon* data = gameInst->GetWeaponRowData(rowName);
+
+		AWeapon* weapon = GetWorld()->SpawnActor<AWeapon>(data->WeaponClass, GetActorTransform());
+		if (weapon)
+		{
+			weapon->SetWeaponRowName(rowName);
+		}
+	}
 }
 

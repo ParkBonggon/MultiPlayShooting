@@ -15,10 +15,10 @@ void ABurstWeapon::EventTrigger_Implementation(bool IsPress)
 
 void ABurstWeapon::LoopShootMontage()
 {
-	if (IsValid(ShootMontage) == false)
+	if (IsValid(weaponData->ShootMontage) == false)
 		return;
 
-	OwnChar->PlayAnimMontage(ShootMontage);
+	OwnChar->PlayAnimMontage(weaponData->ShootMontage);
 
 	BurstCnt--;
 	if (BurstCnt > 0)

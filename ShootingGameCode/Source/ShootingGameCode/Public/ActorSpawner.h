@@ -24,6 +24,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
+
+	UFUNCTION(BlueprintCallable)
+	void SpawnRandomWeapon();
+
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AActor> SpawnClass;
 

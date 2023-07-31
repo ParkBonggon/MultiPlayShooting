@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "ShootingHUD.h"
+#include "ShootingGameInstance.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -24,14 +25,20 @@ AWeapon::AWeapon()
 
 	SetRootComponent(WeaponMesh);
 
-	Ammo = 30;
 }
 
 // Called when the game starts or when spawned
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	UShootingGameInstance* gameInst = Cast<UShootingGameInstance>(GetGameInstance());
+	weaponData = gameInst->GetWeaponRowData(RowName);
+
+	if (weaponData != nullptr)
+	{
+		SetWeaponRowName(RowName);
+	}
 }
 
 void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -39,6 +46,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, Ammo);
+	DOREPLIFETIME(AWeapon, RowName);
 }
 
 // Called every frame
@@ -50,23 +58,23 @@ void AWeapon::Tick(float DeltaTime)
 
 void AWeapon::EventTrigger_Implementation(bool IsPress)
 {
-	if (IsValid(ShootMontage) == false)
+	if (IsValid(weaponData->ShootMontage) == false)
 		return;
 
-	OwnChar->PlayAnimMontage(ShootMontage);
+	OwnChar->PlayAnimMontage(weaponData->ShootMontage);
 }
 
 void AWeapon::EventResetAmmo_Implementation()
 {
-	SetAmmo(30);
+	SetAmmo(weaponData->MaxAmmo);
 }
 
 void AWeapon::EventReload_Implementation()
 {
-	if (IsValid(ReloadMontage) == false)
+	if (IsValid(weaponData->ReloadMontage) == false)
 		return;
 
-	OwnChar->PlayAnimMontage(ReloadMontage);
+	OwnChar->PlayAnimMontage(weaponData->ReloadMontage);
 }
 
 void AWeapon::EventShoot_Implementation()
@@ -74,12 +82,12 @@ void AWeapon::EventShoot_Implementation()
 	if (IsCanShoot() == false)
 		return;
 
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShootEffect,
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), weaponData->FireEffect,
 		WeaponMesh->GetSocketLocation("muzzle"),
 		WeaponMesh->GetSocketRotation("muzzle"), 
 		FVector(0.1f, 0.1f, 0.1f));
 
-	UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShootSound,
+	UGameplayStatics::SpawnSoundAtLocation(GetWorld(), weaponData->SoundBase,
 		WeaponMesh->GetSocketLocation("muzzle"));
 
 	APlayerController* Shooter = GetWorld()->GetFirstPlayerController();
@@ -153,12 +161,17 @@ void AWeapon::ReqShoot_Implementation(FVector vStart, FVector vEnd)
 	if (HitChar == nullptr)
 		return;
 
-	UGameplayStatics::ApplyDamage(HitChar, 10, OwnChar->GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(HitChar, weaponData->Damage, OwnChar->GetController(), this, UDamageType::StaticClass());
 }
 
 void AWeapon::OnRep_Ammo()
 {
 	UpdateAmmoToHud(Ammo);
+}
+
+void AWeapon::OnRep_RowName()
+{
+	SetWeaponData(RowName);
 }
 
 bool AWeapon::IsCanShoot() const
@@ -216,5 +229,21 @@ void AWeapon::SetAmmo(int NewAmmo)
 	Ammo = NewAmmo;
 
 	OnRep_Ammo();
+}
+
+void AWeapon::SetWeaponData(FName name)
+{
+	UShootingGameInstance* gameInst = Cast<UShootingGameInstance>(GetGameInstance());
+	weaponData = gameInst->GetWeaponRowData(name);
+
+	WeaponMesh->SetStaticMesh(weaponData->StaticMesh);
+	EventResetAmmo();
+}
+
+void AWeapon::SetWeaponRowName(FName name)
+{
+	RowName = name;
+
+	OnRep_RowName();
 }
 
