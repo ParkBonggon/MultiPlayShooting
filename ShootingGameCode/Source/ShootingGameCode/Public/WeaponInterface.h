@@ -21,7 +21,7 @@ class SHOOTINGGAMECODE_API IWeaponInterface
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void EventTrigger();
+	void EventTrigger(bool IsPress);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EventReload();

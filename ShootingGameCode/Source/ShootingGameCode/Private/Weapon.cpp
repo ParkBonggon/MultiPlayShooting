@@ -48,7 +48,7 @@ void AWeapon::Tick(float DeltaTime)
 
 }
 
-void AWeapon::EventTrigger_Implementation()
+void AWeapon::EventTrigger_Implementation(bool IsPress)
 {
 	if (IsValid(ShootMontage) == false)
 		return;

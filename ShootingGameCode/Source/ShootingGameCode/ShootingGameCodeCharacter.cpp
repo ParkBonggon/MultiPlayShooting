@@ -113,19 +113,19 @@ void AShootingGameCodeCharacter::ResReload_Implementation()
 	InterfaceObj->Execute_EventReload(EquipWeapon);
 }
 
-void AShootingGameCodeCharacter::ReqShoot_Implementation()
+void AShootingGameCodeCharacter::ReqTrigger_Implementation(bool IsPress)
 {
-	ResShoot();
+	ResTrigger(IsPress);
 }
 
-void AShootingGameCodeCharacter::ResShoot_Implementation()
+void AShootingGameCodeCharacter::ResTrigger_Implementation(bool IsPress)
 {
 	IWeaponInterface* InterfaceObj = Cast<IWeaponInterface>(EquipWeapon);
 
 	if (InterfaceObj == nullptr)
 		return;
 
-	InterfaceObj->Execute_EventTrigger(EquipWeapon);
+	InterfaceObj->Execute_EventTrigger(EquipWeapon, IsPress);
 }
 
 void AShootingGameCodeCharacter::ReqPressF_Implementation()
@@ -248,8 +248,9 @@ void AShootingGameCodeCharacter::SetupPlayerInputComponent(class UInputComponent
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AShootingGameCodeCharacter::Look);
 
-		//Shoot
-		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Shoot);
+		//Trigger
+		EnhancedInputComponent->BindAction(TriggerAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::TriggerPress);
+		EnhancedInputComponent->BindAction(TriggerAction, ETriggerEvent::Completed, this, &AShootingGameCodeCharacter::TriggerRelease);
 
 		//Reload
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Reload);
@@ -299,9 +300,14 @@ void AShootingGameCodeCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void AShootingGameCodeCharacter::Shoot(const FInputActionValue& Value)
+void AShootingGameCodeCharacter::TriggerPress(const FInputActionValue& Value)
 {
-	ReqShoot();
+	ReqTrigger(true);
+}
+
+void AShootingGameCodeCharacter::TriggerRelease(const FInputActionValue& Value)
+{
+	ReqTrigger(false);
 }
 
 void AShootingGameCodeCharacter::Reload(const FInputActionValue& Value)

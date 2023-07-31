@@ -26,9 +26,9 @@ public:
 
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void EventTrigger();
+	void EventTrigger(bool IsPress);
 
-	virtual void EventTrigger_Implementation() override;
+	virtual void EventTrigger_Implementation(bool IsPress) override;
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EventReload();
