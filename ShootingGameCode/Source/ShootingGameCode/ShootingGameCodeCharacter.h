@@ -3,13 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ItemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "ShootingGameCodeCharacter.generated.h"
 
 
 UCLASS(config=Game)
-class AShootingGameCodeCharacter : public ACharacter
+class AShootingGameCodeCharacter : public ACharacter, public IItemInterface
 {
 	GENERATED_BODY()
 
@@ -112,6 +113,12 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ReqDrop();
+
+public:
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void EventGetItem(EItemType itemType);
+
+	void EventGetItem_Implementation(EItemType itemType) override;
 
 public:
 	UFUNCTION(BlueprintCallable)

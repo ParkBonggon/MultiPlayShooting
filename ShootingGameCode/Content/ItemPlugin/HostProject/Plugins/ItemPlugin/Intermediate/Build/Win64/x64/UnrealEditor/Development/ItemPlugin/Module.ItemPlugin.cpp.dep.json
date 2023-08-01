@@ -1,0 +1,32 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\itemplugin\\module.itemplugin.cpp",
+        "ProvidedModule": "",
+        "PCH": "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.shadowerrors.h.pch",
+        "Includes": [
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\itemplugin\\definitions.itemplugin.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\baseitem.gen.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\public\\baseitem.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\baseitem.generated.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\iteminterface.gen.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\public\\iteminterface.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\iteminterface.generated.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\itemplugin.init.gen.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\testmoveactor.gen.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\public\\testmoveactor.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\intermediate\\build\\win64\\unrealeditor\\inc\\itemplugin\\uht\\testmoveactor.generated.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\private\\baseitem.cpp",
+            "c:\\program files\\epic games\\ue_5.2\\engine\\source\\runtime\\engine\\classes\\components\\spherecomponent.h",
+            "c:\\program files\\epic games\\ue_5.2\\engine\\source\\runtime\\engine\\classes\\components\\shapecomponent.h",
+            "c:\\program files\\epic games\\ue_5.2\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\shapecomponent.generated.h",
+            "c:\\program files\\epic games\\ue_5.2\\engine\\intermediate\\build\\win64\\unrealeditor\\inc\\engine\\uht\\spherecomponent.generated.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\private\\iteminterface.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\private\\itemplugin.cpp",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\public\\itemplugin.h",
+            "c:\\work\\multiplayshooting\\shootinggamecode\\content\\itemplugin\\hostproject\\plugins\\itemplugin\\source\\itemplugin\\private\\testmoveactor.cpp"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
