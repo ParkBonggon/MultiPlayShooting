@@ -3,10 +3,12 @@
 
 #include "ShootingHUD.h"
 #include "Blueprint/UserWidget.h"
-#include "ShootingplayerState.h"
+#include "ShootingPlayerState.h"
 
 void AShootingHUD::BeginPlay()
 {
+	check(HudWidgetClass);
+
 	Super::BeginPlay();
 
 	HudWidget = CreateWidget<UUserWidget>(GetWorld(), HudWidgetClass);
@@ -15,21 +17,19 @@ void AShootingHUD::BeginPlay()
 	BindMyPlayerState();
 }
 
-//HP Àç±ÍÇÔ¼ö
 void AShootingHUD::BindMyPlayerState()
 {
 	APlayerController* pc = GetWorld()->GetFirstPlayerController();
 
 	if (IsValid(pc))
 	{
-		AShootingplayerState* ps = Cast<AShootingplayerState>(pc->PlayerState);
+		AShootingPlayerState* ps = Cast<AShootingPlayerState>(pc->PlayerState);
 		if (IsValid(ps))
 		{
-			ps->Fuc_Dele_UpdateHP.AddDynamic(this, &AShootingHUD::OnUpdateMyHP);
-			OnUpdateMyHP(ps->CurHP, ps->MaxHP);
+			ps->Fuc_Dele_UpdateHp.AddDynamic(this, &AShootingHUD::OnUpdateMyHp);
+			OnUpdateMyHp(ps->CurHp, ps->MaxHp);
 
 			ps->Fuc_Dele_UpdateMag.AddDynamic(this, &AShootingHUD::OnUpdateMyMag);
-
 			return;
 		}
 	}
@@ -38,13 +38,12 @@ void AShootingHUD::BindMyPlayerState()
 	timerManager.SetTimer(th_BindMyPlayerState, this, &AShootingHUD::BindMyPlayerState, 0.1f, false);
 }
 
-void AShootingHUD::OnUpdateMyHP_Implementation(float CurHP, float MaxHP)
+void AShootingHUD::OnUpdateMyHp_Implementation(float CurHp, float MaxHp)
 {
 }
 
 void AShootingHUD::OnUpdateMyAmmo_Implementation(int Ammo)
 {
-
 }
 
 void AShootingHUD::OnUpdateMyMag_Implementation(int Mag)

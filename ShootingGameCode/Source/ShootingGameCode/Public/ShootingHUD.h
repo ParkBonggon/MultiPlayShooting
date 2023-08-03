@@ -18,14 +18,12 @@ public:
 	virtual void BeginPlay() override;
 
 public:
-
 	void BindMyPlayerState();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void OnUpdateMyHP(float CurHP, float MaxHP);
+	void OnUpdateMyHp(float CurHp, float MaxHp);
 
-	void OnUpdateMyHP_Implementation(float CurHP, float MaxHP);
-
+	void OnUpdateMyHp_Implementation(float CurHp, float MaxHp);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnUpdateMyAmmo(int Ammo);

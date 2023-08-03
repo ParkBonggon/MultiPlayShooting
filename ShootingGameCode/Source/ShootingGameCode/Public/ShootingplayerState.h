@@ -4,50 +4,59 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "ShootingplayerState.generated.h"
+#include "ShootingPlayerState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDele_UpdateHp_TwoParams, float, CurHP, float, MaxHP);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDele_UpdateHp_TwoParams, float, CurHp, float, MaxHp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDele_UpdateMag_OneParam, int, Mag);
 /**
  * 
  */
 UCLASS()
-class SHOOTINGGAMECODE_API AShootingplayerState : public APlayerState
+class SHOOTINGGAMECODE_API AShootingPlayerState : public APlayerState
 {
 	GENERATED_BODY()
-
+	
 public:
-	AShootingplayerState();
+	AShootingPlayerState();
 
 public:
 	UFUNCTION()
-	void OnRep_CurHP();
+	void OnRep_CurHp();
 
 	UFUNCTION()
-	void OnRep_MaxHP();
+	void OnRep_MaxHp();
 
 	UFUNCTION()
 	void OnRep_Mag();
 
+public:
 	UFUNCTION(BlueprintCallable)
 	void AddDamage(float Damage);
 
 	UFUNCTION(BlueprintCallable)
 	void AddMag();
 
-public:
-	UPROPERTY(ReplicatedUsing = OnRep_CurHP)
-	float CurHP;
+	UFUNCTION(BlueprintCallable)
+	bool UseMag();
 
-	UPROPERTY(ReplicatedUsing = OnRep_MaxHP)
-	float MaxHP;
+	UFUNCTION(BlueprintPure)
+	bool IsCanUseMag();
+
+	UFUNCTION(BlueprintCallable)
+	void AddHeal(float Heal);
+
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_CurHp)
+	float CurHp;
+
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHp)
+	float MaxHp;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Mag)
 	int Mag;
-	
-	UPROPERTY(BlueprintAssignable, VisibleAnywhere, BlueprintCallable)
-	FDele_UpdateHp_TwoParams Fuc_Dele_UpdateHP;
 
+	UPROPERTY(BlueprintAssignable, VisibleAnywhere, BlueprintCallable)
+	FDele_UpdateHp_TwoParams Fuc_Dele_UpdateHp;
 
 	UPROPERTY(BlueprintAssignable, VisibleAnywhere, BlueprintCallable)
 	FDele_UpdateMag_OneParam Fuc_Dele_UpdateMag;

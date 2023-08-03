@@ -27,6 +27,6 @@ class ITEMPLUGIN_API IItemInterface
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Event")
-	void EventGetItem(EItemType itmeType);
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = Event)
+	void EventGetItem(EItemType itemType);
 };

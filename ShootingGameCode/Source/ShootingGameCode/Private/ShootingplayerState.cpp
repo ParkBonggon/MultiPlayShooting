@@ -1,56 +1,85 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ShootingplayerState.h"
+#include "ShootingPlayerState.h"
 #include "Net/UnrealNetwork.h"
 
-AShootingplayerState::AShootingplayerState()
+AShootingPlayerState::AShootingPlayerState()
 {
-	CurHP = 100;
-	MaxHP = 100;
+	CurHp = 100;
+	MaxHp = 100;
 	Mag = 0;
 }
 
-void AShootingplayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AShootingPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AShootingplayerState, CurHP);
-	DOREPLIFETIME(AShootingplayerState, MaxHP);
-	DOREPLIFETIME(AShootingplayerState, Mag);
-
+	DOREPLIFETIME(AShootingPlayerState, CurHp);
+	DOREPLIFETIME(AShootingPlayerState, MaxHp);
+	DOREPLIFETIME(AShootingPlayerState, Mag);
 }
 
-void AShootingplayerState::OnRep_CurHP()
+void AShootingPlayerState::OnRep_CurHp()
 {
-	if (Fuc_Dele_UpdateHP.IsBound())
-	{
-		Fuc_Dele_UpdateHP.Broadcast(CurHP, MaxHP);
-	}
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow,
+		FString::Printf(TEXT("OnRep_CurHp=%f"), CurHp));
+
+	if (Fuc_Dele_UpdateHp.IsBound())
+		Fuc_Dele_UpdateHp.Broadcast(CurHp, MaxHp);
 }
 
-void AShootingplayerState::OnRep_MaxHP()
+void AShootingPlayerState::OnRep_MaxHp()
 {
 }
 
-void AShootingplayerState::OnRep_Mag()
+void AShootingPlayerState::OnRep_Mag()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow,
+		FString::Printf(TEXT("OnRep_Mag=%d"), Mag));
+
 	if (Fuc_Dele_UpdateMag.IsBound())
-	{
 		Fuc_Dele_UpdateMag.Broadcast(Mag);
-	}
 }
 
-void AShootingplayerState::AddDamage(float Damage)
+void AShootingPlayerState::AddDamage(float Damage)
 {
-	CurHP = CurHP - Damage;
+	CurHp = CurHp - Damage;
+	CurHp = FMath::Clamp(CurHp, 0.0f, MaxHp);
 
-	OnRep_CurHP();
+	OnRep_CurHp();
 }
 
-void AShootingplayerState::AddMag()
+void AShootingPlayerState::AddMag()
 {
 	Mag = Mag + 1;
 
 	OnRep_Mag();
+}
+
+bool AShootingPlayerState::UseMag()
+{
+	if (IsCanUseMag() == false)
+		return false;
+
+	Mag = Mag - 1;
+	OnRep_Mag();
+
+	return true;
+}
+
+bool AShootingPlayerState::IsCanUseMag()
+{
+	if (Mag <= 0)
+		return false;
+
+	return true;
+}
+
+void AShootingPlayerState::AddHeal(float Heal)
+{
+	CurHp = CurHp + Heal;
+	CurHp = FMath::Clamp(CurHp, 0.0f, MaxHp);
+
+	OnRep_CurHp();
 }

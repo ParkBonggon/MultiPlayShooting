@@ -5,7 +5,7 @@
 	"FriendlyName": "ItemPlugin",
 	"Description": "",
 	"Category": "Other",
-	"CreatedBy": "",
+	"CreatedBy": "wontae",
 	"CreatedByURL": "",
 	"DocsURL": "",
 	"MarketplaceURL": "",
@@ -18,7 +18,11 @@
 		{
 			"Name": "ItemPlugin",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Win32"
+			]
 		}
 	]
 }

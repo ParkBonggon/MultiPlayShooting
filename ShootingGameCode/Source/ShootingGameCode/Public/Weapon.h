@@ -23,7 +23,6 @@ public:
 		, MaxAmmo(30)
 		, Damage(10)
 		, WeaponClass(nullptr)
-
 	{}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -50,6 +49,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AWeapon> WeaponClass;
 };
+
+
 
 UCLASS()
 class SHOOTINGGAMECODE_API AWeapon : public AActor, public IWeaponInterface
@@ -80,11 +81,6 @@ public:
 	virtual void EventReload_Implementation() override;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void EventResetAmmo();
-
-	virtual void EventResetAmmo_Implementation() override;
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EventShoot();
 
 	virtual void EventShoot_Implementation() override;
@@ -100,9 +96,14 @@ public:
 	virtual void EventDrop_Implementation(ACharacter* targetChar) override;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void IsCanPickup(bool& IsCanPickup);
+	void IsCanPickUp(bool& IsCanPickUp);
 
-	virtual void IsCanPickup_Implementation(bool& IsCanPickup) override;
+	virtual void IsCanPickUp_Implementation(bool& IsCanPickUp) override;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void EventResetAmmo();
+
+	void EventResetAmmo_Implementation() override;
 
 public:
 	UFUNCTION(Server, Reliable)
@@ -125,9 +126,9 @@ public:
 
 	void UpdateAmmoToHud(int NewAmmo);
 
-	void SetAmmo(int NewAmmos);
+	void SetAmmo(int NewAmmo);
 
-	void SetWeaponData(FName Name);
+	void SetWeaponData(FName name);
 
 	void SetWeaponRowName(FName name);
 

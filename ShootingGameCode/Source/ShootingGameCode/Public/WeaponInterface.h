@@ -36,7 +36,7 @@ public:
 	void EventDrop(ACharacter* targetChar);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void IsCanPickup(bool& IsCanPickup);
+	void IsCanPickUp(bool& IsCanPickUp);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void EventResetAmmo();

@@ -12,7 +12,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon.h"
-#include "ShootingplayerState.h"
+#include "ShootingPlayerState.h"
+#include "GameFramework/PlayerStart.h"
+#include "Blueprint/UserWidget.h"
+#include "CustomUserWidget.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AShootingGameCodeCharacter
@@ -52,6 +55,9 @@ AShootingGameCodeCharacter::AShootingGameCodeCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	GetMesh()->SetCollisionProfileName("Ragdoll");
+	IsRagdoll = false;
 }
 
 void AShootingGameCodeCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -59,7 +65,6 @@ void AShootingGameCodeCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AShootingGameCodeCharacter, PlayerRotation);
-	DOREPLIFETIME(AShootingGameCodeCharacter, EquipWeapon);
 }
 
 void AShootingGameCodeCharacter::BeginPlay()
@@ -75,6 +80,10 @@ void AShootingGameCodeCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+
+	CreateNameTag();
+	BindPlayerState();
 }
 
 void AShootingGameCodeCharacter::Tick(float DeltaTime)
@@ -85,13 +94,21 @@ void AShootingGameCodeCharacter::Tick(float DeltaTime)
 	{
 		PlayerRotation = GetControlRotation();
 	}
+
+	if (UGameplayStatics::GetPlayerCharacter(GetWorld(), 0) == this && IsRagdoll)
+	{
+		SetActorLocation(GetMesh()->GetSocketLocation("spine_02"), true);
+	}
 }
 
 float AShootingGameCodeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	AShootingplayerState* ps = Cast<AShootingplayerState>(GetPlayerState());
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow,
+		FString::Printf(TEXT("TakeDamage EventInstigator=%s"), *EventInstigator->GetName()));
+
+	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
 	if (IsValid(ps) == false)
-	return 0.0f;
+		return 0.0f;
 
 	ps->AddDamage(DamageAmount);
 
@@ -100,6 +117,13 @@ float AShootingGameCodeCharacter::TakeDamage(float DamageAmount, FDamageEvent co
 
 void AShootingGameCodeCharacter::ReqReload_Implementation()
 {
+	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
+	if (IsValid(ps) == false)
+		return;
+
+	if (ps->IsCanUseMag() == false)
+		return;
+
 	ResReload();
 }
 
@@ -130,41 +154,25 @@ void AShootingGameCodeCharacter::ResTrigger_Implementation(bool IsPress)
 
 void AShootingGameCodeCharacter::ReqPressF_Implementation()
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, TEXT("ReqPressF_Implementation"));
 	AActor* nearestWeapon = FindNearestWeapon();
 
 	if (IsValid(nearestWeapon) == false)
 		return;
 
-	EquipWeapon = nearestWeapon;
-	EquipWeapon->SetOwner(GetController());
+	nearestWeapon->SetOwner(GetController());
 
-	OnRep_EquipWeapon();
+	ResPressF(nearestWeapon);
 }
 
-void AShootingGameCodeCharacter::OnRep_EquipWeapon()
+void AShootingGameCodeCharacter::ResPressF_Implementation(AActor* weapon)
 {
-	bUseControllerRotationYaw = IsValid(EquipWeapon);
+	if (IsValid(EquipWeapon))
+	{
+		DoDrop();
+	}
 
-	IWeaponInterface* InterfaceObj = Cast<IWeaponInterface>(EquipWeapon);
-
-	if (InterfaceObj == nullptr)
-		return;
-
-	InterfaceObj->Execute_EventPickUp(EquipWeapon, this);
-}
-
-void AShootingGameCodeCharacter::ResDrop_Implementation()
-{
-	IWeaponInterface* InterfaceObj = Cast<IWeaponInterface>(EquipWeapon);
-
-	if (InterfaceObj == nullptr)
-		return;
-
-	InterfaceObj->Execute_EventDrop(EquipWeapon, this);
-	
-	EquipWeapon = nullptr;
-
-	bUseControllerRotationYaw = IsValid(EquipWeapon);
+	DoPickUp(weapon);
 }
 
 void AShootingGameCodeCharacter::ReqDrop_Implementation()
@@ -172,26 +180,50 @@ void AShootingGameCodeCharacter::ReqDrop_Implementation()
 	ResDrop();
 }
 
+void AShootingGameCodeCharacter::ResDrop_Implementation()
+{
+	DoDrop();
+}
+
+void AShootingGameCodeCharacter::ResRevive_Implementation(FTransform ReviveTrans)
+{
+	DoGetUp();
+
+	FVector Loc = ReviveTrans.GetLocation();
+	FRotator Rot = ReviveTrans.Rotator();
+
+	SetActorLocationAndRotation(Loc, Rot);
+
+}
+
 void AShootingGameCodeCharacter::EventGetItem_Implementation(EItemType itemType)
 {
 	switch (itemType)
 	{
-	case EItemType::IT_Heal:
-	{
-		break;
-	}
-	case EItemType::IT_Mag:
-	{
-		AShootingplayerState* ps = Cast<AShootingplayerState>(GetPlayerState());
-		
-
-		if (IsValid(ps))
+		case EItemType::IT_Heal:
 		{
-			ps->AddMag();
+			AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
+			if (IsValid(ps))
+			{
+				ps->AddHeal(100);
+			}
+			break;
 		}
-		break;
+		case EItemType::IT_Mag:
+		{
+			AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
+			if (IsValid(ps))
+			{
+				ps->AddMag();
+			}
+			break;
+		}
 	}
-	}
+}
+
+void AShootingGameCodeCharacter::EventUpdateNameTag_Implementation()
+{
+
 }
 
 void AShootingGameCodeCharacter::EquipTestWeapon(TSubclassOf<class AWeapon> WeaponClass)
@@ -218,10 +250,10 @@ AActor* AShootingGameCodeCharacter::FindNearestWeapon()
 
 	for (AActor* target : actors)
 	{
-		bool IsCanPickup = false;
+		bool IsCanPickUp = false;
 		IWeaponInterface* i = Cast<IWeaponInterface>(target);
-		i->Execute_IsCanPickup(target, IsCanPickup);
-		if (IsCanPickup == false)
+		i->Execute_IsCanPickUp(target, IsCanPickUp);
+		if (IsCanPickUp == false)
 			continue;
 
 		double distance = FVector::Dist(target->GetActorLocation(), GetActorLocation());
@@ -234,6 +266,126 @@ AActor* AShootingGameCodeCharacter::FindNearestWeapon()
 	}
 
 	return nearestWeapon;
+}
+
+void AShootingGameCodeCharacter::DoRagdoll()
+{
+	if (IsRagdoll)
+		return;
+
+	IsRagdoll = true;
+
+	GetMesh()->SetSimulatePhysics(true);
+}
+
+void AShootingGameCodeCharacter::DoGetUp()
+{
+	if (IsRagdoll == false)
+		return;
+
+	IsRagdoll = false;
+
+	GetMesh()->SetSimulatePhysics(false);
+
+	GetMesh()->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+
+	FVector vloc = { 0.0f, 0.0f, -89.0f };
+	FRotator rRot = { 0.0f, 270.0f, 0.0f };
+
+	GetMesh()->SetRelativeLocationAndRotation(vloc, rRot);
+}
+
+void AShootingGameCodeCharacter::OnUpdateHp_Implementation(float CurHp, float MaxHp)
+{
+	if (CurHp > 0)
+	{
+		if (HasAuthority())
+		{
+			FTimerManager& timerManager = GetWorld()->GetTimerManager();
+			timerManager.SetTimer(th_Revive, this, &AShootingGameCodeCharacter::DoRevive, 3.0f, false);
+		}
+	}
+	else
+	{
+		DoRagdoll();
+	}
+	OnUpdateHp(CurHp, MaxHp);
+}
+
+void AShootingGameCodeCharacter::DoPickUp(AActor* weapon)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, TEXT("DoPickUp"));
+
+	EquipWeapon = weapon;
+
+	bUseControllerRotationYaw = true;
+
+	IWeaponInterface* InterfaceObj = Cast<IWeaponInterface>(weapon);
+
+	if (InterfaceObj == nullptr)
+		return;
+
+	InterfaceObj->Execute_EventPickUp(weapon, this);
+}
+
+void AShootingGameCodeCharacter::DoDrop()
+{
+	bUseControllerRotationYaw = false;
+
+	IWeaponInterface* InterfaceObj = Cast<IWeaponInterface>(EquipWeapon);
+
+	if (InterfaceObj == nullptr)
+		return;
+
+	InterfaceObj->Execute_EventDrop(EquipWeapon, this);
+
+	EquipWeapon = nullptr;
+}
+
+void AShootingGameCodeCharacter::BindPlayerState()
+{
+	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
+	if (IsValid(ps))
+	{
+		ps->Fuc_Dele_UpdateHp.AddDynamic(this, &AShootingGameCodeCharacter::OnUpdateHp);
+		OnUpdateHp(ps->CurHp, ps->MaxHp);
+		return;
+	}
+
+	FTimerManager& timerManager = GetWorld()->GetTimerManager();
+	timerManager.SetTimer(th_BindPlayerState, this, &AShootingGameCodeCharacter::BindPlayerState, 0.1f, false);
+}
+
+void AShootingGameCodeCharacter::DoRevive()
+{
+	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
+	if (IsValid(ps) == false)
+		return;
+	
+	ps->AddHeal(100.0f);
+
+	ResRevive(GetRandomReviveTransform());
+}
+
+FTransform AShootingGameCodeCharacter::GetRandomReviveTransform()
+{
+	TArray<AActor*> arrPS;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), APlayerStart::StaticClass(), arrPS);
+	AActor* randStart = arrPS[FMath::RandRange(0, arrPS.Num() - 1)];
+
+	return randStart->GetActorTransform();
+}
+
+void AShootingGameCodeCharacter::CreateNameTag()
+{
+	check(NameTagClass);
+
+	NameTagWidget = CreateWidget<UCustomUserWidget>(GetWorld(), NameTagClass);
+	NameTagWidget->AddToViewport();
+	NameTagWidget->OwnChar = this;
+
+	FTimerManager& timerManager = GetWorld()->GetTimerManager();
+	timerManager.SetTimer(th_NameTag, this, &AShootingGameCodeCharacter::EventUpdateNameTag, 0.01f, true);
 }
 
 FRotator AShootingGameCodeCharacter::GetPlayerRotation()
@@ -282,12 +434,20 @@ void AShootingGameCodeCharacter::SetupPlayerInputComponent(class UInputComponent
 
 		//Drop
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Drop);
+
+		//Drop
+		EnhancedInputComponent->BindAction(TestAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Test);
 	}
 
 }
 
 void AShootingGameCodeCharacter::Move(const FInputActionValue& Value)
 {
+	if (IsRagdoll == true)
+		return;
+
+
+
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -339,15 +499,23 @@ void AShootingGameCodeCharacter::Reload(const FInputActionValue& Value)
 
 void AShootingGameCodeCharacter::PressF(const FInputActionValue& Value)
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, TEXT("PressF"));
 	ReqPressF();
 }
 
 void AShootingGameCodeCharacter::Drop(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Press G"));
 	ReqDrop();
 }
 
-
-
-
+void AShootingGameCodeCharacter::Test(const FInputActionValue& Value)
+{
+	if (IsRagdoll)
+	{
+		DoGetUp();
+	}
+	else
+	{
+		DoRagdoll();
+	}
+}
