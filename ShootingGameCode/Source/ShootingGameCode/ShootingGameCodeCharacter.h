@@ -54,6 +54,10 @@ class AShootingGameCodeCharacter : public ACharacter, public IItemInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* DropAction;
 
+	/** Drop Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* GrenadeAction;
+
 	/** Test Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* TestAction;
@@ -84,6 +88,10 @@ protected:
 	void Drop(const FInputActionValue& Value);
 
 	/** Called for looking input */
+	void GrenadePress(const FInputActionValue& Value);
+	void GrenadeRelease(const FInputActionValue& Value);
+
+	/** Called for looking input */
 	void Test(const FInputActionValue& Value);
 
 protected:
@@ -97,6 +105,9 @@ protected:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, 
 		class AController* EventInstigator, AActor* DamageCauser) override;
+
+	UFUNCTION()
+	void OnCharacterDestroyed(AActor* DestroyedActor);
 
 public:
 	UFUNCTION(Server, Reliable)
@@ -126,6 +137,21 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void ResRevive(FTransform ReviveTrans);
 
+	UFUNCTION(Server, Reliable)
+	void ReqGrenade();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ResGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ReqSpawnGrenade(FVector Start, FVector Impluse);
+
+	UFUNCTION(Server, Reliable)
+	void ReqAddKill();
+
+	UFUNCTION(Server, Reliable)
+	void ReqAddDeath();
+
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void EventGetItem(EItemType itemType);
@@ -136,7 +162,6 @@ public:
 	void EventUpdateNameTag();
 
 	void EventUpdateNameTag_Implementation();
-
 public:
 	UFUNCTION(BlueprintCallable)
 	void EquipTestWeapon(TSubclassOf<class AWeapon> WeaponClass);
@@ -154,6 +179,11 @@ public:
 	void OnUpdateHp(float CurHp, float MaxHp);
 
 	void OnUpdateHp_Implementation(float CurHp, float MaxHp);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnUpdateUserName(const FString& UserName);
+
+	void OnUpdateUserName_Implementation(const FString& UserName);
 
 public:
 	/** Returns CameraBoom subobject **/
@@ -174,6 +204,10 @@ public:
 
 	void CreateNameTag();
 
+	void SpawnGrenade();
+
+	void ShowGrenadeGuideLine();
+
 public:
 	UPROPERTY(Replicated)
 	FRotator PlayerRotation;
@@ -191,11 +225,18 @@ public:
 	FTimerHandle th_BindPlayerState;
 	FTimerHandle th_Revive;
 	FTimerHandle th_NameTag;
+	FTimerHandle th_Grenade;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<class UCustomUserWidget> NameTagClass;
 
 	UPROPERTY(BlueprintReadWrite)
 	UCustomUserWidget* NameTagWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UAnimMontage* GrenadeMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<class AGrenade> GrenadeClass;
 };
 

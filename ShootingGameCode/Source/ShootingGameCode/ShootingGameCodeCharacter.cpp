@@ -16,6 +16,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Blueprint/UserWidget.h"
 #include "CustomUserWidget.h"
+#include "Grenade.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AShootingGameCodeCharacter
@@ -58,6 +59,8 @@ AShootingGameCodeCharacter::AShootingGameCodeCharacter()
 
 	GetMesh()->SetCollisionProfileName("Ragdoll");
 	IsRagdoll = false;
+
+	OnDestroyed.AddDynamic(this, &AShootingGameCodeCharacter::OnCharacterDestroyed);
 }
 
 void AShootingGameCodeCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -81,7 +84,6 @@ void AShootingGameCodeCharacter::BeginPlay()
 		}
 	}
 
-
 	CreateNameTag();
 	BindPlayerState();
 }
@@ -103,16 +105,35 @@ void AShootingGameCodeCharacter::Tick(float DeltaTime)
 
 float AShootingGameCodeCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow,
-		FString::Printf(TEXT("TakeDamage EventInstigator=%s"), *EventInstigator->GetName()));
+	if (EventInstigator == nullptr)
+		return 0.0f;
 
 	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
 	if (IsValid(ps) == false)
 		return 0.0f;
 
-	ps->AddDamage(DamageAmount);
+	if (ps->AddDamage(DamageAmount))
+	{
+		ps->AddDeath();
+
+		AShootingPlayerState* pKillerPS = Cast<AShootingPlayerState>(EventInstigator->PlayerState);
+		
+		if (IsValid(pKillerPS) == false)
+			return DamageAmount;
+
+		pKillerPS->AddKill();
+
+	}
 
 	return DamageAmount;
+}
+
+void AShootingGameCodeCharacter::OnCharacterDestroyed(AActor* DestroyedActor)
+{
+	if (IsValid(NameTagWidget) == false)
+		return;
+
+	NameTagWidget->RemoveFromParent();
 }
 
 void AShootingGameCodeCharacter::ReqReload_Implementation()
@@ -187,13 +208,51 @@ void AShootingGameCodeCharacter::ResDrop_Implementation()
 
 void AShootingGameCodeCharacter::ResRevive_Implementation(FTransform ReviveTrans)
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow,
+	//	FString::Printf(TEXT("ResRevive")));
+	
 	DoGetUp();
 
 	FVector Loc = ReviveTrans.GetLocation();
 	FRotator Rot = ReviveTrans.Rotator();
 
 	SetActorLocationAndRotation(Loc, Rot);
+}
 
+void AShootingGameCodeCharacter::ReqGrenade_Implementation()
+{
+	ResGrenade();
+}
+
+void AShootingGameCodeCharacter::ResGrenade_Implementation()
+{
+	PlayAnimMontage(GrenadeMontage);
+}
+
+void AShootingGameCodeCharacter::ReqSpawnGrenade_Implementation(FVector Start, FVector Impluse)
+{
+	AGrenade* grenade = GetWorld()->SpawnActor<AGrenade>(GrenadeClass, Start, FRotator(0.0f, 0.0f, 0.0f));
+
+	grenade->instigater = GetController();
+	grenade->StaticMesh->AddImpulse(Impluse);
+}
+
+void AShootingGameCodeCharacter::ReqAddKill_Implementation()
+{
+	AShootingPlayerState* pPlayerState = Cast<AShootingPlayerState>(GetPlayerState());
+	if (IsValid(pPlayerState) == false)
+		return;
+
+	pPlayerState->AddKill();
+}
+
+void AShootingGameCodeCharacter::ReqAddDeath_Implementation()
+{
+	AShootingPlayerState* pPlayerState = Cast<AShootingPlayerState>(GetPlayerState());
+	if (IsValid(pPlayerState) == false)
+		return;
+
+	pPlayerState->AddDeath();
 }
 
 void AShootingGameCodeCharacter::EventGetItem_Implementation(EItemType itemType)
@@ -223,7 +282,6 @@ void AShootingGameCodeCharacter::EventGetItem_Implementation(EItemType itemType)
 
 void AShootingGameCodeCharacter::EventUpdateNameTag_Implementation()
 {
-
 }
 
 void AShootingGameCodeCharacter::EquipTestWeapon(TSubclassOf<class AWeapon> WeaponClass)
@@ -299,17 +357,22 @@ void AShootingGameCodeCharacter::OnUpdateHp_Implementation(float CurHp, float Ma
 {
 	if (CurHp > 0)
 	{
+
+	}
+	else
+	{
+		DoRagdoll();
+
 		if (HasAuthority())
 		{
 			FTimerManager& timerManager = GetWorld()->GetTimerManager();
 			timerManager.SetTimer(th_Revive, this, &AShootingGameCodeCharacter::DoRevive, 3.0f, false);
 		}
 	}
-	else
-	{
-		DoRagdoll();
-	}
-	OnUpdateHp(CurHp, MaxHp);
+}
+
+void AShootingGameCodeCharacter::OnUpdateUserName_Implementation(const FString& UserName)
+{
 }
 
 void AShootingGameCodeCharacter::DoPickUp(AActor* weapon)
@@ -349,6 +412,9 @@ void AShootingGameCodeCharacter::BindPlayerState()
 	{
 		ps->Fuc_Dele_UpdateHp.AddDynamic(this, &AShootingGameCodeCharacter::OnUpdateHp);
 		OnUpdateHp(ps->CurHp, ps->MaxHp);
+
+		ps->Func_Dele_UpdateUserName.AddDynamic(this, &AShootingGameCodeCharacter::OnUpdateUserName);
+		OnUpdateUserName(ps->GetUserName());
 		return;
 	}
 
@@ -361,7 +427,7 @@ void AShootingGameCodeCharacter::DoRevive()
 	AShootingPlayerState* ps = Cast<AShootingPlayerState>(GetPlayerState());
 	if (IsValid(ps) == false)
 		return;
-	
+
 	ps->AddHeal(100.0f);
 
 	ResRevive(GetRandomReviveTransform());
@@ -386,6 +452,54 @@ void AShootingGameCodeCharacter::CreateNameTag()
 
 	FTimerManager& timerManager = GetWorld()->GetTimerManager();
 	timerManager.SetTimer(th_NameTag, this, &AShootingGameCodeCharacter::EventUpdateNameTag, 0.01f, true);
+}
+
+void AShootingGameCodeCharacter::SpawnGrenade()
+{
+	if (UGameplayStatics::GetPlayerCharacter(GetWorld(), 0) != this)
+		return;
+
+	FVector StartPos;
+	FVector Impluse;
+	FVector CameraStart = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetActorForwardVector();
+
+	StartPos = CameraStart + (CameraForward * 400.0f);
+	FVector addUp = CameraForward + FVector(0.0f, 0.0f, 0.2f);
+	Impluse = addUp.GetSafeNormal() + CameraForward * 550.0f;
+
+	ReqSpawnGrenade(StartPos, Impluse);
+}
+
+void AShootingGameCodeCharacter::ShowGrenadeGuideLine()
+{
+	FVector StartPos;
+	FVector Impluse;
+	FVector CameraStart = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetActorForwardVector();
+
+	StartPos = CameraStart + (CameraForward * 400.0f);
+	FVector addUp = CameraForward + FVector(0.0f, 0.0f, 0.2f);
+	Impluse = addUp.GetSafeNormal() + CameraForward * 1000.0f;
+
+	FPredictProjectilePathParams PathParams;
+	FPredictProjectilePathResult PathResult;
+
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjArr;
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_PhysicsBody));
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Vehicle));
+	ObjArr.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Destructible));
+
+	PathParams.StartLocation = StartPos;
+	PathParams.LaunchVelocity = Impluse;
+	PathParams.ProjectileRadius = 16;
+	PathParams.ObjectTypes = ObjArr;
+	PathParams.DrawDebugType = EDrawDebugTrace::ForOneFrame;
+
+	bool bHit = UGameplayStatics::PredictProjectilePath(GetWorld(), PathParams, PathResult);
 }
 
 FRotator AShootingGameCodeCharacter::GetPlayerRotation()
@@ -435,7 +549,11 @@ void AShootingGameCodeCharacter::SetupPlayerInputComponent(class UInputComponent
 		//Drop
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Drop);
 
-		//Drop
+		//Grenade
+		EnhancedInputComponent->BindAction(GrenadeAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::GrenadePress);
+		EnhancedInputComponent->BindAction(GrenadeAction, ETriggerEvent::Completed, this, &AShootingGameCodeCharacter::GrenadeRelease);
+
+		//Test
 		EnhancedInputComponent->BindAction(TestAction, ETriggerEvent::Started, this, &AShootingGameCodeCharacter::Test);
 	}
 
@@ -445,8 +563,6 @@ void AShootingGameCodeCharacter::Move(const FInputActionValue& Value)
 {
 	if (IsRagdoll == true)
 		return;
-
-
 
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -508,14 +624,22 @@ void AShootingGameCodeCharacter::Drop(const FInputActionValue& Value)
 	ReqDrop();
 }
 
+void AShootingGameCodeCharacter::GrenadePress(const FInputActionValue& Value)
+{
+	FTimerManager& timerManager = GetWorld()->GetTimerManager();
+	timerManager.SetTimer(th_Grenade, this, &AShootingGameCodeCharacter::ShowGrenadeGuideLine, 0.01f, true);
+}
+
+void AShootingGameCodeCharacter::GrenadeRelease(const FInputActionValue& Value)
+{
+	FTimerManager& timerManager = GetWorld()->GetTimerManager();
+	timerManager.ClearTimer(th_Grenade);
+
+	ReqGrenade();
+}
+
 void AShootingGameCodeCharacter::Test(const FInputActionValue& Value)
 {
-	if (IsRagdoll)
-	{
-		DoGetUp();
-	}
-	else
-	{
-		DoRagdoll();
-	}
+	ReqAddKill();
+	ReqAddDeath();
 }

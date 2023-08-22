@@ -20,6 +20,9 @@ public:
 public:
 	void BindMyPlayerState();
 
+	void BindPlayerState(class AShootingPlayerState* PlayerState);
+
+public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnUpdateMyHp(float CurHp, float MaxHp);
 
@@ -34,6 +37,20 @@ public:
 	void OnUpdateMyMag(int Mag);
 
 	void OnUpdateMyMag_Implementation(int Mag);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnUpdateUserName(const FString& userName);
+
+	void OnUpdateUserName_Implementation(const FString& userName);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+	void OnUpdateKillDeath(int kill, int death);
+
+	void OnUpdateKillDeath_Implementation(int kill, int death);
+
+public:
+	UFUNCTION(BlueprintPure)
+	void GetPlayerListSortByKill(TArray<AShootingPlayerState*>& playerStates);
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
